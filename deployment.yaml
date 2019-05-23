@@ -1,0 +1,65 @@
+################################################################################
+# Simple Node Application
+################################################################################
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubernetes-node-deployment
+  labels:
+    app: kubernetes-node
+spec:
+  replicas: 3
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: kubernetes-node
+  template:
+    metadata:
+      labels:
+        app: kubernetes-node
+    spec:
+      containers:
+      - name: kubernetes-node
+        image: kubernetes-node:v1 # update this when you change the docker image version
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        ports:
+        - containerPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubernetes-node-deployment
+  labels:
+    app: kubernetes-node
+spec:
+  selector:
+    app: kubernetes-node
+  type: NodePort
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5000
+    targetPort: 5000
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kubernetes-node-deployment
+  labels:
+    app: kubernetes-node
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: kubernetes-node-deployment
+  minReplicas: 3
+  maxReplicas: 50
+  targetCPUUtilizationPercentage: 20
